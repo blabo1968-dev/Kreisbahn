@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="de" class="h-full w-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Einstrich – Blankenhagen Spieleentwicklung</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    /* Touch-Handling & Scrollbar-Sperre */
+    html, body {
+      overscroll-behavior: none;
+      touch-action: none;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans antialiased h-full w-full overflow-hidden flex flex-col justify-between select-none">
+
+  <!-- ================= HEADER (Branding, Status, Punkte & Controls) ================= -->
+  <header class="w-full bg-slate-900/90 border-b border-slate-800 px-3 py-2 flex items-center justify-between z-10 shrink-0 shadow-md">
+    <!-- Brand / Title -->
+    <div class="flex items-center gap-2">
+      <div class="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-400 font-bold text-base shadow-sm">
+        E
+      </div>
+      <div>
+        <h2 class="text-[10px] font-semibold text-emerald-400 uppercase tracking-wider leading-none mb-0.5">Blankenhagen Spieleentwicklung</h2>
+        <h1 class="text-xs sm:text-sm font-bold tracking-wide text-slate-100 leading-none">Einstrich <span class="text-[10px] font-normal text-slate-400" id="header-level-info">(Lvl <span id="level-num">1</span>/<span id="level-total">12</span>)</span></h1>
+      </div>
+    </div>
+
+    <!-- Controls & Stats -->
+    <div class="flex items-center gap-1.5 sm:gap-2">
+      <!-- Vollbild Button -->
+      <button onclick="toggleFullScreen()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 p-1.5 rounded-lg border border-slate-700/60 flex items-center justify-center" title="Vollbild an/aus">
+        <svg class="w-3.5 h-3.5 stroke-current text-cyan-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+        </svg>
+      </button>
+
+      <!-- Mute/Sound Button -->
+      <button id="sound-toggle" onclick="toggleSound()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 p-1.5 rounded-lg border border-slate-700/60 flex items-center justify-center" title="Ton an/aus">
+        <svg id="sound-icon-on" class="w-3.5 h-3.5 stroke-current text-emerald-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+        </svg>
+        <svg id="sound-icon-off" class="w-3.5 h-3.5 stroke-current text-slate-500 hidden" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="1" y1="1" x2="23" y2="23"></line>
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+        </svg>
+      </button>
+
+      <!-- Punkte -->
+      <div class="bg-slate-800/80 border border-slate-700/60 px-2 py-1 rounded-full flex items-center gap-1 text-xs font-semibold text-amber-300">
+        <svg class="w-3.5 h-3.5 fill-current text-amber-400" viewBox="0 0 24 24">
+          <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+        </svg>
+        <span id="score-display">0</span>
+      </div>
+
+      <!-- Zurück (Undo) -->
+      <button onclick="undoMove()" class="bg-slate-800 hover:bg-slate-700 active:scale-95 transition-all text-slate-200 font-semibold text-xs px-2 py-1.5 rounded-lg border border-slate-700/60 flex items-center gap-1" title="Letzten Zug zurücknehmen">
+        <svg class="w-3.5 h-3.5 stroke-current text-cyan-400" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 14L4 9l5-5"/>
+          <path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11"/>
+        </svg>
+        <span class="hidden sm:inline">Zurück</span>
+      </button>
+
+      <!-- Nochmal (Level Reset) -->
+      <button onclick="resetLevel()" class="bg-emerald-600 hover:bg-emerald-500 active:scale-95 transition-all text-white font-semibold text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-1 shadow-sm">
+        <svg class="w-3.5 h-3.5 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+        </svg>
+        <span>Nochmal</span>
+      </button>
+
+      <!-- Überspringen (Skip) -->
+      <button onclick="skipLevel()" class="bg-amber-600 hover:bg-amber-500 active:scale-95 transition-all text-white font-semibold text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-1 shadow-sm" title="Level überspringen">
+        <span>Weiter</span>
+        <svg class="w-3.5 h-3.5 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ================= FORMEN-VORSCHAU-LEISTE ================= -->
+  <div class="w-full bg-slate-900/50 border-b border-slate-800 px-2 py-1.5 flex items-center gap-2 overflow-x-auto no-scrollbar shrink-0 z-10" id="mini-preview-bar"></div>
+
+  <!-- ================= HAUPT-SPIELFELD (Canvas & Overlays) ================= -->
+  <main class="relative flex-1 w-full h-full flex items-center justify-center overflow-hidden bg-slate-950">
+    <canvas id="gameCanvas" class="w-full h-full cursor-pointer block touch-none"></canvas>
+    <canvas id="particleCanvas" class="absolute inset-0 pointer-events-none z-20"></canvas>
+
+    <!-- Sackgassen-Warnung -->
+    <div id="deadend-banner" class="hidden absolute top-4 inset-x-4 mx-auto max-w-xs bg-rose-950/90 border border-rose-500/50 text-rose-200 text-xs px-3 py-2 rounded-xl text-center shadow-xl backdrop-blur-md pointer-events-none transition-all z-25">
+      ⚠️ Sackgasse! Klicke auf <b>Zurück</b> oder <b>Nochmal</b>.
+    </div>
+
+    <!-- Zwischendurch Level-Fertig Overlay -->
+    <div id="success-overlay" class="hidden absolute inset-0 bg-slate-950/80 backdrop-blur-md flex flex-col items-center justify-center gap-4 z-30 p-6 text-center">
+      <div class="w-14 h-14 bg-emerald-500/20 border border-emerald-400/50 text-emerald-400 rounded-2xl flex items-center justify-center text-2xl shadow-lg animate-bounce">
+        ✓
+      </div>
+      <div>
+        <h2 class="text-xl font-bold text-white mb-1" id="success-title">Kreisform geschafft!</h2>
+        <p class="text-xs text-slate-300">Hervorragend gezeichnet!</p>
+      </div>
+      <button onclick="nextLevel()" class="bg-emerald-500 hover:bg-emerald-400 active:scale-95 transition-all text-slate-950 font-bold text-sm px-6 py-2.5 rounded-xl shadow-lg shadow-emerald-500/20">
+        Nächstes Level →
+      </button>
+    </div>
+
+    <!-- FINAL-GLÜCKWUNSCH-SEITE -->
+    <div id="game-over-screen" class="hidden absolute inset-0 bg-slate-950/95 backdrop-blur-xl flex flex-col items-center justify-center z-40 p-6 text-center overflow-y-auto">
+      <div class="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl flex flex-col items-center gap-5 my-auto">
+        <div class="relative">
+          <div class="w-20 h-20 bg-amber-500/20 border border-amber-400/50 text-amber-400 rounded-3xl flex items-center justify-center text-4xl shadow-xl shadow-amber-500/10 animate-pulse">
+            🏆
+          </div>
+          <div class="absolute -top-2 -right-2 bg-emerald-500 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-full shadow">
+            100%
+          </div>
+        </div>
+
+        <div>
+          <h2 class="text-2xl font-black text-white tracking-wide">Meisterleistung!</h2>
+          <p class="text-xs text-emerald-400 font-semibold mt-1">Blankenhagen Spieleentwicklung</p>
+          <p class="text-xs text-slate-300 mt-2 leading-relaxed">
+            Du hast alle <b>12 geschwungenen Kreis- und Bogenfiguren</b> ohne Fehler gemeistert!
+          </p>
+        </div>
+
+        <div class="w-full bg-slate-950/80 border border-slate-800 rounded-2xl p-4 flex items-center justify-between shadow-inner">
+          <div class="text-left">
+            <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Gesamtpunktzahl</span>
+            <div class="text-2xl font-black text-amber-300 flex items-center gap-1.5">
+              <svg class="w-5 h-5 fill-current text-amber-400" viewBox="0 0 24 24">
+                <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+              </svg>
+              <span id="final-score-display">0</span>
+            </div>
+          </div>
+          <div class="text-right">
+            <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Gelöste Formen</span>
+            <div class="text-lg font-bold text-emerald-400">12 von 12</div>
+          </div>
+        </div>
+
+        <div class="w-full flex flex-col gap-2.5 pt-2">
+          <button onclick="resetWholeGame()" class="w-full bg-emerald-500 hover:bg-emerald-400 active:scale-95 transition-all text-slate-950 font-bold text-sm py-3 rounded-xl shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2">
+            <svg class="w-4 h-4 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+              <path d="M3 3v5h5"/>
+            </svg>
+            <span>Nochmal von vorn spielen</span>
+          </button>
+
+          <button onclick="openLevelSelectFromGameOver()" class="w-full bg-slate-800 hover:bg-slate-700 active:scale-95 transition-all text-slate-200 font-semibold text-xs py-2.5 rounded-xl border border-slate-700/60">
+            Level frei wählen
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ================= UNTERE NAVIGATION (Bottom-Bar) ================= -->
+  <footer class="w-full bg-slate-900 border-t border-slate-800 px-3 py-2 flex items-center justify-around gap-2 z-10 shrink-0 shadow-lg">
+    <button onclick="resetWholeGame()" class="flex-1 max-w-[80px] bg-slate-800 hover:bg-slate-700 active:scale-95 transition-all text-slate-300 font-medium text-xs py-2 px-1 rounded-lg border border-slate-700/60 flex items-center justify-center gap-1">
+      <svg class="w-3.5 h-3.5 stroke-current text-slate-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+        <path d="M3 3v5h5"/>
+      </svg>
+      <span>Anfang</span>
+    </button>
+
+    <button onclick="startDailyPuzzle()" class="flex-1 max-w-[90px] bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 active:scale-95 transition-all text-white font-bold text-xs py-2 px-1 rounded-lg shadow-md flex items-center justify-center gap-1">
+      <svg class="w-3.5 h-3.5 fill-current text-amber-200" viewBox="0 0 24 24">
+        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+      </svg>
+      <span>Täglich</span>
+    </button>
+
+    <button onclick="openLevelSelect()" class="flex-1 max-w-[80px] bg-slate-800 hover:bg-slate-700 active:scale-95 transition-all text-slate-300 font-medium text-xs py-2 px-1 rounded-lg border border-slate-700/60 flex items-center justify-center gap-1">
+      <svg class="w-3.5 h-3.5 stroke-current text-amber-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="7" height="7"></rect>
+        <rect x="14" y="3" width="7" height="7"></rect>
+        <rect x="14" y="14" width="7" height="7"></rect>
+        <rect x="3" y="14" width="7" height="7"></rect>
+      </svg>
+      <span>Level</span>
+    </button>
+
+    <button onclick="openModal('rules-modal')" class="flex-1 max-w-[80px] bg-slate-800 hover:bg-slate-700 active:scale-95 transition-all text-slate-300 font-medium text-xs py-2 px-1 rounded-lg border border-slate-700/60 flex items-center justify-center gap-1">
+      <svg class="w-3.5 h-3.5 stroke-current text-cyan-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="16" x2="12" y2="12"/>
+        <line x1="12" y1="8" x2="12.01" y2="8"/>
+      </svg>
+      <span>Regeln</span>
+    </button>
+
+    <button onclick="openModal('impressum-modal')" class="flex-1 max-w-[80px] bg-slate-800 hover:bg-slate-700 active:scale-95 transition-all text-slate-300 font-medium text-xs py-2 px-1 rounded-lg border border-slate-700/60 flex items-center justify-center gap-1">
+      <svg class="w-3.5 h-3.5 stroke-current text-slate-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      </svg>
+      <span>Info</span>
+    </button>
+  </footer>
+
+  <!-- ================= MODALS ================= -->
+  <div id="level-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl p-5 shadow-2xl max-h-[85vh] overflow-y-auto flex flex-col gap-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h2 class="text-base font-bold text-slate-100 flex items-center gap-2">
+          <span class="text-amber-400">🗺️</span> Level-Auswahl
+        </h2>
+        <button onclick="closeModal('level-modal')" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800">✕</button>
+      </div>
+      <div id="level-grid" class="grid grid-cols-4 gap-2.5 my-2"></div>
+      <button onclick="closeModal('level-modal')" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs py-2.5 rounded-xl transition-all">
+        Schließen
+      </button>
+    </div>
+  </div>
+
+  <div id="rules-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl p-5 shadow-2xl max-h-[85vh] overflow-y-auto flex flex-col gap-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h2 class="text-base font-bold text-slate-100 flex items-center gap-2">
+          <span class="text-cyan-400">📖</span> Spielregeln
+        </h2>
+        <button onclick="closeModal('rules-modal')" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800">✕</button>
+      </div>
+      <div class="space-y-3 text-xs text-slate-300 leading-relaxed">
+        <div class="flex items-start gap-2.5 bg-slate-850 p-2.5 rounded-xl border border-slate-800">
+          <span class="text-cyan-400 font-bold">1.</span>
+          <p><b>Ohne Absetzen zeichnen:</b> Fahre die geschwungenen Kreisbögen mit deinem Finger oder der Maus flüssig nach.</p>
+        </div>
+        <div class="flex items-start gap-2.5 bg-slate-850 p-2.5 rounded-xl border border-slate-800">
+          <span class="text-cyan-400 font-bold">2.</span>
+          <p><b>Kein Bogen doppelt:</b> Jeder Kreisbogen darf genau einmal durchlaufen werden.</p>
+        </div>
+        <div class="flex items-start gap-2.5 bg-slate-850 p-2.5 rounded-xl border border-slate-800">
+          <span class="text-cyan-400 font-bold">3.</span>
+          <p><b>Einbahn-Bögen:</b> Pfeile geben die zwingende Richtung des Kreisbogens vor.</p>
+        </div>
+      </div>
+      <button onclick="closeModal('rules-modal')" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs py-2.5 rounded-xl transition-all">
+        Schließen
+      </button>
+    </div>
+  </div>
+
+  <div id="impressum-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl p-5 shadow-2xl max-h-[85vh] overflow-y-auto flex flex-col gap-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h2 class="text-base font-bold text-slate-100 flex items-center gap-2">
+          <span class="text-emerald-400">🛡️</span> Impressum
+        </h2>
+        <button onclick="closeModal('impressum-modal')" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800">✕</button>
+      </div>
+      <div class="space-y-3 text-xs text-slate-300">
+        <div>
+          <h3 class="font-bold text-slate-100 text-sm">Blankenhagen Spieleentwicklung</h3>
+          <p class="mt-1 text-slate-300">Inhaber: Jörg Blankenhagen</p>
+          <p>Kanalstraße 31</p>
+          <p>73614 Schorndorf</p>
+        </div>
+        <div class="pt-2 border-t border-slate-800">
+          <p class="font-semibold text-slate-200">Kontakt:</p>
+          <p>E-Mail: <a href="mailto:spieleentwicklung@freenet.de" class="text-emerald-400 underline">spieleentwicklung@freenet.de</a></p>
+        </div>
+        <div class="pt-3 border-t border-slate-800 text-[11px] text-slate-400 italic">
+          Dieser Text/Dieses Bild/Dieses Video/Diese Anwendung wurde unter Zuhilfenahme einer Künstlichen Intelligenz erstellt und von einem Menschen überprüft.
+        </div>
+      </div>
+      <button onclick="closeModal('impressum-modal')" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs py-2.5 rounded-xl transition-all">
+        Schließen
+      </button>
+    </div>
+  </div>
+
+  <!-- ================= SPIEL-LOGIK ================= -->
+  <script>
+    const LEVELS = [
+      {
+        id: 1,
+        title: "Die Lemniskate (Acht)",
+        nodes: [{x: 50, y: 50}, {x: 25, y: 50}, {x: 75, y: 50}],
+        edges: [
+          { from: 0, to: 1, cp: {x: 37.5, y: 20} },
+          { from: 1, to: 0, cp: {x: 37.5, y: 80} },
+          { from: 0, to: 2, cp: {x: 62.5, y: 20} },
+          { from: 2, to: 0, cp: {x: 62.5, y: 80} }
+        ]
+      },
+      {
+        id: 2,
+        title: "Vesica Piscis (Sichelmond)",
+        nodes: [{x: 50, y: 20}, {x: 50, y: 80}],
+        edges: [
+          { from: 0, to: 1, cp: {x: 20, y: 50} },
+          { from: 1, to: 0, cp: {x: 80, y: 50} },
+          { from: 0, to: 1, cp: {x: 35, y: 50} },
+          { from: 1, to: 0, cp: {x: 65, y: 50} }
+        ]
+      },
+      {
+        id: 3,
+        title: "Der Dreipass",
+        nodes: [{x: 50, y: 20}, {x: 25, y: 70}, {x: 75, y: 70}],
+        edges: [
+          { from: 0, to: 1, cp: {x: 15, y: 35} },
+          { from: 1, to: 2, cp: {x: 50, y: 90} },
+          { from: 2, to: 0, cp: {x: 85, y: 35} },
+          { from: 0, to: 1, cp: {x: 45, y: 45} },
+          { from: 1, to: 2, cp: {x: 50, y: 60} },
+          { from: 2, to: 0, cp: {x: 55, y: 45} }
+        ]
+      },
+      {
+        id: 4,
+        title: "Die Vierpass-Rosette",
+        nodes: [{x: 50, y: 15}, {x: 85, y: 50}, {x: 50, y: 85}, {x: 15, y: 50}],
+        edges: [
+          { from: 0, to: 1, cp: {x: 80, y: 20} },
+          { from: 1, to: 2, cp: {x: 80, y: 80} },
+          { from: 2, to: 3, cp: {x: 20, y: 80} },
+          { from: 3, to: 0, cp: {x: 20, y: 20} },
+          { from: 0, to: 2, cp: {x: 35, y: 50} },
+          { from: 2, to: 0, cp: {x: 65, y: 50} },
+          { from: 1, to: 3, cp: {x: 50, y: 35} },
+          { from: 3, to: 1, cp: {x: 50, y: 65} }
+        ]
+      },
+      {
+        id: 5,
+        title: "Einbahn-Bogen",
+        nodes: [{x: 20, y: 50}, {x: 50, y: 20}, {x: 80, y: 50}, {x: 50, y: 80}],
+        edges: [
+          { from: 0, to: 1, cp: {x: 25, y: 25}, directed: true },
+          { from: 1, to: 2, cp: {x: 75, y: 25}, directed: true },
+          { from: 2, to: 3, cp: {x: 75, y: 75}, directed: true },
+          { from: 3, to: 0, cp: {x: 25, y: 75}, directed: true },
+          { from: 0, to: 2, cp: {x: 50, y: 40} },
+          { from: 2, to: 0, cp: {x: 50, y: 60} }
+        ]
+      },
+      {
+        id: 6,
+        title: "Die Bogen-Raupe",
+        nodes: [{x: 15, y: 50}, {x: 38, y: 50}, {x: 62, y: 50}, {x: 85, y: 50}],
+        edges: [
+          { from: 0, to: 1, cp: {x: 26.5, y: 20} },
+          { from: 1, to: 0, cp: {x: 26.5, y: 80} },
+          { from: 1, to: 2, cp: {x: 50, y: 20} },
+          { from: 2, to: 1, cp: {x: 50, y: 80} },
+          { from: 2, to: 3, cp: {x: 73.5, y: 20} },
+          { from: 3, to: 2, cp: {x: 73.5, y: 80} }
+        ]
+      },
+      {
+        id: 7,
+        title: "Das Mandel-Siegel",
+        nodes: [{x: 50, y: 15}, {x: 80, y: 75}, {x: 20, y: 75}],
+        edges: [
+          { from: 0, to: 1, cp: {x: 85, y: 35} },
+          { from: 1, to: 0, cp: {x: 55, y: 45} },
+          { from: 1, to: 2, cp: {x: 50, y: 95} },
+          { from: 2, to: 1, cp: {x: 50, y: 60} },
+          { from: 2, to: 0, cp: {x: 15, y: 35} },
+          { from: 0, to: 2, cp: {x: 45, y: 45} },
+          { from: 0, to: 1, cp: {x: 70, y: 40} },
+          { from: 2, to: 0, cp: {x: 30, y: 40} }
+        ]
+      },
+      {
+        id: 8,
+        title: "Pfeil-Kreislauf",
+        nodes: [{x: 50, y: 15}, {x: 85, y: 40}, {x: 70, y: 80}, {x: 30, y: 80}, {x: 15, y: 40}],
+        edges: [
+          { from: 0, to: 1, cp: {x: 75, y: 20}, directed: true },
+          { from: 1, to: 2, cp: {x: 90, y: 60}, directed: true },
+          { from: 2, to: 3, cp: {x: 50, y: 90}, directed: true },
+          { from: 3, to: 4, cp: {x: 10, y: 60}, directed: true },
+          { from: 4, to: 0, cp: {x: 25, y: 20}, directed: true },
+          { from: 0, to: 2, cp: {x: 65, y: 45} },
+          { from: 2, to: 4, cp: {x: 40, y: 60} },
+          { from: 4, to: 1, cp: {x: 50, y: 35} }
+        ]
+      },
+      {
+        id: 9,
+        title: "Das Oktaeder-Bogennetz",
+        nodes: [{x: 50, y: 15}, {x: 20, y: 50}, {x: 50, y: 50}, {x: 80, y: 50}, {x: 50, y: 85}],
+        edges: [
+          { from: 0, to: 1, cp: {x: 25, y: 25} }, { from: 0, to: 2, cp: {x: 42, y: 30} }, { from: 0, to: 3, cp: {x: 75, y: 25} },
+          { from: 1, to: 2, cp: {x: 30, y: 42} }, { from: 2, to: 3, cp: {x: 70, y: 42} },
+          { from: 1, to: 4, cp: {x: 25, y: 75} }, { from: 2, to: 4, cp: {x: 42, y: 70} }, { from: 3, to: 4, cp: {x: 75, y: 75} },
+          { from: 1, to: 3, cp: {x: 50, y: 25} }, { from: 3, to: 1, cp: {x: 50, y: 75} }
+        ]
+      },
+      {
+        id: 10,
+        title: "Die Bogen-Brücke",
+        nodes: [{x: 15, y: 50}, {x: 38, y: 20}, {x: 38, y: 80}, {x: 62, y: 20}, {x: 62, y: 80}, {x: 85, y: 50}],
+        edges: [
+          { from: 0, to: 1, cp: {x: 20, y: 25} }, { from: 0, to: 2, cp: {x: 20, y: 75} },
+          { from: 1, to: 2, cp: {x: 30, y: 50} }, { from: 1, to: 3, cp: {x: 50, y: 10} },
+          { from: 2, to: 4, cp: {x: 50, y: 90} }, { from: 3, to: 4, cp: {x: 70, y: 50} },
+          { from: 3, to: 5, cp: {x: 80, y: 25} }, { from: 4, to: 5, cp: {x: 80, y: 75} },
+          { from: 2, to: 3, cp: {x: 50, y: 50} }
+        ]
+      },
+      {
+        id: 11,
+        title: "Die Sechspass-Blüte",
+        nodes: [{x: 50, y: 15}, {x: 80, y: 32}, {x: 80, y: 68}, {x: 50, y: 85}, {x: 20, y: 68}, {x: 20, y: 32}],
+        edges: [
+          { from: 0, to: 1, cp: {x: 72, y: 15} }, { from: 1, to: 2, cp: {x: 90, y: 50} },
+          { from: 2, to: 3, cp: {x: 72, y: 85} }, { from: 3, to: 4, cp: {x: 28, y: 85} },
+          { from: 4, to: 5, cp: {x: 10, y: 50} }, { from: 5, to: 0, cp: {x: 28, y: 15} },
+          { from: 0, to: 3, cp: {x: 35, y: 50} }, { from: 3, to: 0, cp: {x: 65, y: 50} },
+          { from: 1, to: 4, cp: {x: 50, y: 40} }, { from: 2, to: 5, cp: {x: 50, y: 60} }
+        ]
+      },
+      {
+        id: 12,
+        title: "Meister-Kreislabyrinth",
+        nodes: [{x: 50, y: 10}, {x: 20, y: 35}, {x: 80, y: 35}, {x: 35, y: 65}, {x: 65, y: 65}, {x: 50, y: 90}],
+        edges: [
+          { from: 0, to: 1, cp: {x: 25, y: 15} }, { from: 0, to: 2, cp: {x: 75, y: 15} }, { from: 1, to: 2, cp: {x: 50, y: 25} },
+          { from: 1, to: 3, cp: {x: 15, y: 55} }, { from: 2, to: 4, cp: {x: 85, y: 55} }, { from: 3, to: 4, cp: {x: 50, y: 55} },
+          { from: 3, to: 5, cp: {x: 30, y: 85} }, { from: 4, to: 5, cp: {x: 70, y: 85} }, { from: 1, to: 4, cp: {x: 45, y: 45} },
+          { from: 2, to: 3, cp: {x: 55, y: 45} }
+        ]
+      }
+    ];
+
+    // --- ZUSTAND & FREIHAND-GESTEN-TRAIL ---
+    let currentLevelIdx = parseInt(localStorage.getItem('einstrich_level') || '0');
+    let score = parseInt(localStorage.getItem('einstrich_score') || '0');
+    let currentLevelStartScore = score;
+    let activeNode = null;
+    let drawnEdges = [];
+    let freehandPath = []; // Speichert die exakten Finger-Punkte
+    let isDragging = false;
+    let isDailyMode = false;
+    
+    let savedCompleted = localStorage.getItem('einstrich_completed');
+    let completedLevels = savedCompleted ? JSON.parse(savedCompleted) : new Array(LEVELS.length).fill(false);
+
+    let soundEnabled = true;
+    let audioCtx = null;
+    let nodePulseAnim = { nodeIdx: null, radius: 0 };
+    let particles = [];
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const pCanvas = document.getElementById('particleCanvas');
+    const pCtx = pCanvas.getContext('2d');
+
+    const scoreDisplay = document.getElementById('score-display');
+    const levelNumDisplay = document.getElementById('level-num');
+    const levelTotalDisplay = document.getElementById('level-total');
+    const headerLevelInfo = document.getElementById('header-level-info');
+    const deadendBanner = document.getElementById('deadend-banner');
+    const successOverlay = document.getElementById('success-overlay');
+    const gameOverScreen = document.getElementById('game-over-screen');
+    const finalScoreDisplay = document.getElementById('final-score-display');
+
+    function saveProgress() {
+      localStorage.setItem('einstrich_level', currentLevelIdx);
+      localStorage.setItem('einstrich_score', score);
+      localStorage.setItem('einstrich_completed', JSON.stringify(completedLevels));
+    }
+
+    function startDailyPuzzle() {
+      isDailyMode = true;
+      const today = new Date().toISOString().slice(0, 10);
+      let hash = 0;
+      for (let i = 0; i < today.length; i++) {
+        hash = (hash << 5) - hash + today.charCodeAt(i);
+        hash |= 0;
+      }
+      currentLevelIdx = Math.abs(hash) % LEVELS.length;
+      currentLevelStartScore = score;
+      headerLevelInfo.innerHTML = `<span class="text-amber-400 font-bold">★ Tägliches Rätsel</span>`;
+      resetLevel();
+    }
+
+    function toggleFullScreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => {});
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+      }
+    }
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+    }
+
+    function playTone(step) {
+      if (!soundEnabled) return;
+      try {
+        initAudio();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        const baseFreq = 300;
+        const scale = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21];
+        const note = scale[step % scale.length];
+        const freq = baseFreq * Math.pow(2, note / 12);
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.3);
+      } catch (e) {}
+    }
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      document.getElementById('sound-icon-on').classList.toggle('hidden', !soundEnabled);
+      document.getElementById('sound-icon-off').classList.toggle('hidden', soundEnabled);
+    }
+
+    function triggerHaptic() {
+      if (navigator.vibrate) navigator.vibrate(20);
+    }
+
+    function triggerNodePulse(nodeIdx) {
+      nodePulseAnim = { nodeIdx: nodeIdx, radius: 10 };
+      animatePulse();
+    }
+
+    function animatePulse() {
+      if (nodePulseAnim.radius < 26) {
+        nodePulseAnim.radius += 2;
+        render();
+        requestAnimationFrame(animatePulse);
+      } else {
+        nodePulseAnim.nodeIdx = null;
+        render();
+      }
+    }
+
+    function spawnVictoryParticles() {
+      const rect = pCanvas.getBoundingClientRect();
+      for (let i = 0; i < 40; i++) {
+        particles.push({
+          x: rect.width / 2,
+          y: rect.height / 2,
+          vx: (Math.random() - 0.5) * 10,
+          vy: (Math.random() - 0.5) * 10 - 2,
+          size: Math.random() * 6 + 2,
+          color: Math.random() > 0.5 ? '#10b981' : '#f59e0b',
+          alpha: 1
+        });
+      }
+      animateParticles();
+    }
+
+    function animateParticles() {
+      const rect = pCanvas.getBoundingClientRect();
+      pCtx.clearRect(0, 0, rect.width, rect.height);
+      
+      particles.forEach((p, index) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.2;
+        p.alpha -= 0.02;
+
+        if (p.alpha <= 0) {
+          particles.splice(index, 1);
+        } else {
+          pCtx.save();
+          pCtx.globalAlpha = p.alpha;
+          pCtx.fillStyle = p.color;
+          pCtx.beginPath();
+          pCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          pCtx.fill();
+          pCtx.restore();
+        }
+      });
+
+      if (particles.length > 0) {
+        requestAnimationFrame(animateParticles);
+      }
+    }
+
+    function renderMiniPreviewBar() {
+      const bar = document.getElementById('mini-preview-bar');
+      bar.innerHTML = '';
+      LEVELS.forEach((lvl, idx) => {
+        const isCurrent = !isDailyMode && idx === currentLevelIdx;
+        const isDone = completedLevels[idx];
+
+        const btn = document.createElement('button');
+        btn.className = `shrink-0 px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${
+          isCurrent 
+            ? 'bg-emerald-500 text-slate-950 shadow-md ring-2 ring-emerald-400' 
+            : isDone
+              ? 'bg-emerald-950/60 border border-emerald-500/40 text-emerald-300'
+              : 'bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800'
+        }`;
+        
+        btn.innerHTML = `<span>Lvl ${lvl.id}</span>${isDone ? '<span class="text-[10px]">✓</span>' : ''}`;
+        btn.onclick = () => loadLevel(idx);
+        bar.appendChild(btn);
+      });
+    }
+
+    function initCanvas() {
+      const parent = canvas.parentElement;
+      const rect = parent.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      pCanvas.width = rect.width * dpr;
+      pCanvas.height = rect.height * dpr;
+      
+      ctx.resetTransform();
+      ctx.scale(dpr, dpr);
+      pCtx.resetTransform();
+      pCtx.scale(dpr, dpr);
+      
+      scoreDisplay.textContent = score;
+      levelTotalDisplay.textContent = LEVELS.length;
+      if (!isDailyMode) {
+        headerLevelInfo.innerHTML = `(Lvl <span id="level-num">${currentLevelIdx + 1}</span>/<span id="level-total">12</span>)`;
+      }
+      renderMiniPreviewBar();
+      render();
+    }
+
+    window.addEventListener('resize', initCanvas);
+    window.addEventListener('orientationchange', () => setTimeout(initCanvas, 200));
+
+    function getCurrentLevel() {
+      return LEVELS[currentLevelIdx];
+    }
+
+    function resetLevel() {
+      score = currentLevelStartScore;
+      scoreDisplay.textContent = score;
+      saveProgress();
+
+      activeNode = null;
+      drawnEdges = [];
+      freehandPath = [];
+      isDragging = false;
+
+      deadendBanner.classList.add('hidden');
+      successOverlay.classList.add('hidden');
+      gameOverScreen.classList.add('hidden');
+      render();
+    }
+
+    function undoMove() {
+      if (drawnEdges.length === 0) return;
+
+      drawnEdges.pop();
+      score = Math.max(currentLevelStartScore, score - 10);
+      scoreDisplay.textContent = score;
+      saveProgress();
+
+      if (drawnEdges.length === 0) {
+        activeNode = null;
+      } else {
+        const lastEdge = drawnEdges[drawnEdges.length - 1];
+        activeNode = lastEdge.to;
+      }
+
+      freehandPath = [];
+      deadendBanner.classList.add('hidden');
+      successOverlay.classList.add('hidden');
+      render();
+    }
+
+    function resetWholeGame() {
+      isDailyMode = false;
+      currentLevelIdx = 0;
+      score = 0;
+      currentLevelStartScore = 0;
+      completedLevels.fill(false);
+      scoreDisplay.textContent = score;
+      headerLevelInfo.innerHTML = `(Lvl <span id="level-num">1</span>/<span id="level-total">12</span>)`;
+      saveProgress();
+      gameOverScreen.classList.add('hidden');
+      renderMiniPreviewBar();
+      resetLevel();
+    }
+
+    function loadLevel(idx) {
+      isDailyMode = false;
+      currentLevelIdx = idx;
+      currentLevelStartScore = score;
+      headerLevelInfo.innerHTML = `(Lvl <span id="level-num">${currentLevelIdx + 1}</span>/<span id="level-total">12</span>)`;
+      saveProgress();
+      gameOverScreen.classList.add('hidden');
+      closeModal('level-modal');
+      renderMiniPreviewBar();
+      resetLevel();
+    }
+
+    function skipLevel() {
+      if (isDailyMode) {
+        alert("Das tägliche Rätsel kann nicht übersprungen werden!");
+        return;
+      }
+      if (currentLevelIdx < LEVELS.length - 1) {
+        currentLevelIdx++;
+        currentLevelStartScore = score;
+        headerLevelInfo.innerHTML = `(Lvl <span id="level-num">${currentLevelIdx + 1}</span>/<span id="level-total">12</span>)`;
+        saveProgress();
+        renderMiniPreviewBar();
+        resetLevel();
+      } else {
+        showGameOverScreen();
+      }
+    }
+
+    function nextLevel() {
+      completedLevels[currentLevelIdx] = true;
+      const bonus = isDailyMode ? 100 : 50;
+      score += bonus;
+      currentLevelStartScore = score;
+      scoreDisplay.textContent = score;
+      saveProgress();
+
+      if (isDailyMode) {
+        alert("🎉 Tägliches Rätsel erfolgreich gelöst! +100 Bonuspunkte!");
+        isDailyMode = false;
+        loadLevel(0);
+        return;
+      }
+
+      if (currentLevelIdx < LEVELS.length - 1) {
+        currentLevelIdx++;
+        headerLevelInfo.innerHTML = `(Lvl <span id="level-num">${currentLevelIdx + 1}</span>/<span id="level-total">12</span>)`;
+        renderMiniPreviewBar();
+        resetLevel();
+      } else {
+        showGameOverScreen();
+      }
+    }
+
+    function showGameOverScreen() {
+      successOverlay.classList.add('hidden');
+      deadendBanner.classList.add('hidden');
+      finalScoreDisplay.textContent = score;
+      gameOverScreen.classList.remove('hidden');
+      spawnVictoryParticles();
+      renderMiniPreviewBar();
+    }
+
+    function openLevelSelectFromGameOver() {
+      gameOverScreen.classList.add('hidden');
+      openLevelSelect();
+    }
+
+    function getScaledPos(pt) {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const padding = Math.min(rect.width, rect.height) * 0.15;
+      const w = rect.width - padding * 2;
+      const h = rect.height - padding * 2;
+      return {
+        x: padding + (pt.x / 100) * w,
+        y: padding + (pt.y / 100) * h
+      };
+    }
+
+    function findNodeAt(x, y) {
+      const level = getCurrentLevel();
+      const threshold = 32;
+      for (let i = 0; i < level.nodes.length; i++) {
+        const pos = getScaledPos(level.nodes[i]);
+        const dist = Math.hypot(pos.x - x, pos.y - y);
+        if (dist <= threshold) return i;
+      }
+      return null;
+    }
+
+    function isValidMove(from, to) {
+      const level = getCurrentLevel();
+      for (let edge of level.edges) {
+        const isDrawn = drawnEdges.some(d => 
+          (d.from === from && d.to === to && d.cp === edge.cp) || 
+          (!edge.directed && d.from === to && d.to === from && d.cp === edge.cp)
+        );
+
+        if (!isDrawn) {
+          if (edge.from === from && edge.to === to) return true;
+          if (!edge.directed && edge.from === to && edge.to === from) return true;
+        }
+      }
+      return false;
+    }
+
+    function getEdgeObj(from, to) {
+      const level = getCurrentLevel();
+      for (let edge of level.edges) {
+        const isDrawn = drawnEdges.some(d => 
+          (d.from === from && d.to === to && d.cp === edge.cp) || 
+          (!edge.directed && d.from === to && d.to === from && d.cp === edge.cp)
+        );
+        if (!isDrawn) {
+          if (edge.from === from && edge.to === to) return edge;
+          if (!edge.directed && edge.from === to && edge.to === from) return edge;
+        }
+      }
+      return null;
+    }
+
+    function checkDeadEnd() {
+      if (activeNode === null) return;
+      const level = getCurrentLevel();
+      let hasAvailableMove = false;
+
+      for (let i = 0; i < level.nodes.length; i++) {
+        if (i !== activeNode && isValidMove(activeNode, i)) {
+          hasAvailableMove = true;
+          break;
+        }
+      }
+
+      if (!hasAvailableMove && drawnEdges.length < level.edges.length) {
+        deadendBanner.classList.remove('hidden');
+      }
+    }
+
+    function checkLevelComplete() {
+      const level = getCurrentLevel();
+      if (drawnEdges.length === level.edges.length) {
+        playTone(drawnEdges.length + 2);
+        triggerHaptic();
+        spawnVictoryParticles();
+        
+        if (!isDailyMode && currentLevelIdx === LEVELS.length - 1) {
+          showGameOverScreen();
+        } else {
+          successOverlay.classList.remove('hidden');
+        }
+      }
+    }
+
+    // --- FREIHAND-GESTEN UND TOUCH INPUT ---
+    function getCanvasCoords(e) {
+      const rect = canvas.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      return {
+        x: clientX - rect.left,
+        y: clientY - rect.top
+      };
+    }
+
+    function handleStart(e) {
+      e.preventDefault();
+      initAudio();
+      const coords = getCanvasCoords(e);
+      const clickedNode = findNodeAt(coords.x, coords.y);
+
+      if (clickedNode !== null) {
+        if (activeNode === null) {
+          activeNode = clickedNode;
+          playTone(0);
+          triggerHaptic();
+          triggerNodePulse(clickedNode);
+        } else if (isValidMove(activeNode, clickedNode)) {
+          const edgeObj = getEdgeObj(activeNode, clickedNode);
+          drawnEdges.push({ from: activeNode, to: clickedNode, cp: edgeObj.cp });
+          activeNode = clickedNode;
+          score += 10;
+          scoreDisplay.textContent = score;
+          playTone(drawnEdges.length);
+          triggerHaptic();
+          triggerNodePulse(clickedNode);
+          checkLevelComplete();
+          checkDeadEnd();
+        }
+        isDragging = true;
+        freehandPath = [coords];
+      }
+      render();
+    }
+
+    function handleMove(e) {
+      if (!isDragging && activeNode === null) return;
+      e.preventDefault();
+      const coords = getCanvasCoords(e);
+
+      if (isDragging && activeNode !== null) {
+        freehandPath.push(coords);
+
+        const hoveredNode = findNodeAt(coords.x, coords.y);
+        if (hoveredNode !== null && hoveredNode !== activeNode) {
+          if (isValidMove(activeNode, hoveredNode)) {
+            const edgeObj = getEdgeObj(activeNode, hoveredNode);
+            drawnEdges.push({ from: activeNode, to: hoveredNode, cp: edgeObj.cp });
+            activeNode = hoveredNode;
+            score += 10;
+            scoreDisplay.textContent = score;
+            playTone(drawnEdges.length);
+            triggerHaptic();
+            triggerNodePulse(hoveredNode);
+            checkLevelComplete();
+            checkDeadEnd();
+            freehandPath = [coords]; // Pfad an neuem Knoten zurücksetzen
+          }
+        }
+      }
+      render();
+    }
+
+    function handleEnd(e) {
+      isDragging = false;
+      freehandPath = [];
+      render();
+    }
+
+    canvas.addEventListener('mousedown', handleStart);
+    canvas.addEventListener('mousemove', handleMove);
+    canvas.addEventListener('mouseup', handleEnd);
+
+    canvas.addEventListener('touchstart', handleStart, { passive: false });
+    canvas.addEventListener('touchmove', handleMove, { passive: false });
+    canvas.addEventListener('touchend', handleEnd);
+
+    // --- RENDER ENGINE (FREIHAND PFAD & BÖGEN) ---
+    function render() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      ctx.clearRect(0, 0, rect.width, rect.height);
+
+      const level = getCurrentLevel();
+
+      // 1. Ungezeichnete vorgegebene Bogen-Formen
+      level.edges.forEach(edge => {
+        const p1 = getScaledPos(level.nodes[edge.from]);
+        const p2 = getScaledPos(level.nodes[edge.to]);
+        const cp = getScaledPos(edge.cp);
+
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.quadraticCurveTo(cp.x, cp.y, p2.x, p2.y);
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 4;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+
+        if (edge.directed) {
+          drawCurveArrow(p1, cp, p2, '#64748b');
+        }
+      });
+
+      // 2. Bereits gelöste geschwungene Bögen
+      drawnEdges.forEach(dEdge => {
+        const p1 = getScaledPos(level.nodes[dEdge.from]);
+        const p2 = getScaledPos(level.nodes[dEdge.to]);
+        const cp = getScaledPos(dEdge.cp);
+
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.quadraticCurveTo(cp.x, cp.y, p2.x, p2.y);
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 6;
+        ctx.lineCap = 'round';
+        ctx.shadowColor = '#10b981';
+        ctx.shadowBlur = 12;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      });
+
+      // 3. Echter Freihand-Finger-Trail in Echtzeit
+      if (freehandPath.length > 1 && isDragging) {
+        ctx.beginPath();
+        ctx.moveTo(freehandPath[0].x, freehandPath[0].y);
+        for (let i = 1; i < freehandPath.length; i++) {
+          ctx.lineTo(freehandPath[i].x, freehandPath[i].y);
+        }
+        ctx.strokeStyle = '#06b6d4';
+        ctx.lineWidth = 5;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.shadowColor = '#06b6d4';
+        ctx.shadowBlur = 10;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      }
+
+      // 4. Impuls-Rippel Animation
+      if (nodePulseAnim.nodeIdx !== null) {
+        const pos = getScaledPos(level.nodes[nodePulseAnim.nodeIdx]);
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, nodePulseAnim.radius, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(6, 182, 212, 0.5)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+
+      // 5. Knoten zeichnen
+      level.nodes.forEach((node, i) => {
+        const pos = getScaledPos(node);
+        const isActive = (i === activeNode);
+
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, isActive ? 14 : 10, 0, Math.PI * 2);
+
+        if (isActive) {
+          ctx.fillStyle = '#06b6d4';
+          ctx.shadowColor = '#06b6d4';
+          ctx.shadowBlur = 15;
+        } else {
+          ctx.fillStyle = '#1e293b';
+          ctx.shadowBlur = 0;
+        }
+
+        ctx.fill();
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = isActive ? '#ffffff' : '#475569';
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      });
+    }
+
+    function drawCurveArrow(p1, cp, p2, color) {
+      const t = 0.5;
+      const midX = (1 - t) * (1 - t) * p1.x + 2 * (1 - t) * t * cp.x + t * t * p2.x;
+      const midY = (1 - t) * (1 - t) * p1.y + 2 * (1 - t) * t * cp.y + t * t * p2.y;
+
+      const dx = 2 * (1 - t) * (cp.x - p1.x) + 2 * t * (p2.x - cp.x);
+      const dy = 2 * (1 - t) * (cp.y - p1.y) + 2 * t * (p2.y - cp.y);
+      const angle = Math.atan2(dy, dx);
+      const headlen = 12;
+
+      ctx.beginPath();
+      ctx.moveTo(midX, midY);
+      ctx.lineTo(midX - headlen * Math.cos(angle - Math.PI / 6), midY - headlen * Math.sin(angle - Math.PI / 6));
+      ctx.moveTo(midX, midY);
+      ctx.lineTo(midX - headlen * Math.cos(angle + Math.PI / 6), midY - headlen * Math.sin(angle + Math.PI / 6));
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
+
+    // --- MODALS ---
+    function openLevelSelect() {
+      const grid = document.getElementById('level-grid');
+      grid.innerHTML = '';
+      LEVELS.forEach((lvl, idx) => {
+        const btn = document.createElement('button');
+        const isCurrent = !isDailyMode && idx === currentLevelIdx;
+        const isDone = completedLevels[idx];
+        btn.className = `py-3 rounded-xl font-bold text-xs flex flex-col items-center justify-center gap-1 transition-all ${
+          isCurrent 
+            ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/20' 
+            : isDone
+              ? 'bg-emerald-950/60 border border-emerald-500/50 text-emerald-300'
+              : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700/60'
+        }`;
+        btn.innerHTML = `<span>Lvl ${lvl.id}</span>${isDone ? '<span class="text-[10px]">✓ Gelöst</span>' : ''}`;
+        btn.onclick = () => loadLevel(idx);
+        grid.appendChild(btn);
+      });
+      openModal('level-modal');
+    }
+
+    function openModal(id) {
+      document.getElementById(id).classList.add('flex');
+      document.getElementById(id).classList.remove('hidden');
+    }
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('flex');
+      document.getElementById(id).classList.add('hidden');
+    }
+
+    window.onload = () => {
+      initCanvas();
+    };
+  </script>
+</body>
+</html>
